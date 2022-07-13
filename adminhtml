@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>管理者ログイン画面</title>
+</head>
+
+
+<body>
+<div style="text-align:center">
+<h1>管理者ログイン</h1>
+<form action="/admin_login" method="post">
+<input type="text" name="adminId" placeholder="管理者用ID"><br>
+<input type="text" name="adminPass" placeholder="管理者用パスワード">
+<input type="submit"value="ログイン">
+<br>
+<span th:text="${adminErrMsg}" style="color:RED"></span>
+</form>
+
+<br>
+</div>
+<a href="/top">戻る</a>
+</body>
+</html>

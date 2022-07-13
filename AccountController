@@ -1,0 +1,163 @@
+package com.example.app.controller;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.example.domain.model.User;
+import com.example.domain.repository.UserRepository;
+
+@Controller
+public class AccountController {
+
+	@Autowired
+	HttpSession session;
+
+	@Autowired
+	UserRepository userRepository;
+
+	// ユーザーのログイン画面を表示
+	@RequestMapping("/toUserLogin")
+	public String toUserLogin() {
+		return "user_login";
+	}
+
+	// ユーザーの新規登録画面を表示
+	@RequestMapping("/toUserInsert")
+	public String toUserInsert() {
+		return "user_insert";
+	}
+
+	// 管理者のログイン画面を表示
+	@RequestMapping("/toAdminLogin")
+	public String toAdminLogin() {
+		session.invalidate();
+		return "admin_login";
+	}
+
+	// ユーザーが存在するか確認してログインする
+	@RequestMapping(value="/userLogin", method=RequestMethod.POST)
+	public ModelAndView userLogin(
+			@RequestParam("email") String email,
+			@RequestParam("password") String password,
+			ModelAndView mv) {
+
+		User user = (User)userRepository.findByEmailAndPssword(email, password);
+		if (user.getEmail() == null || user.getPassword() == null) {
+			mv.addObject("emailErrorMessage", "メールアドレスが正しくありません。");
+			mv.addObject("passwordErrorMessage", "パスワードが正しくありません。");
+			mv.setViewName("user_login");
+		} else if (user.getEmail() == null) {
+			mv.addObject("emailErrorMessage", "メールアドレスが正しくありません。");
+			mv.setViewName("user_login");
+		} else if (user.getPassword() == null) {
+			mv.addObject("passwordErrorMessage", "パスワードが正しくありません。");
+			mv.setViewName("user_login");
+		} else {
+			mv.addObject("user", user);
+			session.setAttribute("user", user);
+			mv.setViewName("user_top");
+		}
+		return mv;
+	}
+
+	// ユーザー新規登録する
+	@RequestMapping(value="/userInsert", method=RequestMethod.POST)
+	public ModelAndView userInsert(
+			@RequestParam("userName") String userName,
+			@RequestParam("email") String email,
+			@RequestParam("password") String password,
+			@RequestParam("passwordConfirmation") String passwordConfirmation,
+			@RequestParam("tel") String tel,
+			@RequestParam("birthday") String birthday,
+			@RequestParam("postalCode") String postalCode,
+			@RequestParam("address") String address,
+			ModelAndView mv) {
+
+		if (password != passwordConfirmation) {
+			mv.addObject("passwordError", "確認パスワードと一致しません。");
+		}
+
+		String errUserName = null;
+		String errEmail = null;
+		String errPassword = null;
+		String errTel = null;
+		String errBirthday = null;
+		String errPostalCode = null;
+		String errAddress = null;
+
+		if(userName == "") {errUserName = "入力必須項目です";}
+		if(email == "") {errEmail ="入力必須項目です";}
+		if(password == "" || password != passwordConfirmation) {errPassword = "確認パスワードと一致しません";}
+		if(tel == "") {errTel ="入力必須項目です";}
+		if(birthday == "") {errBirthday = "入力必須項目です";}
+		if(postalCode == "") {errPostalCode ="入力必須項目です";}
+		if(address == "") {errAddress ="入力必須項目です";}
+
+		if(errUserName != null || errEmail != null || errPassword != null || errTel != null || errBirthday != null || errPostalCode != null || errAddress != null) {
+			mv.addObject("errUserName", errUserName);
+			mv.addObject("errEmail", errEmail);
+			mv.addObject("errPassword", errPassword);
+			mv.addObject("errTel", errTel);
+			mv.addObject("errBirthday", errBirthday);
+			mv.addObject("errPostalCode", errPostalCode);
+			mv.addObject("errAddress", errAddress);
+
+			mv.addObject("userName", userName);
+			mv.addObject("email", email);
+			mv.addObject("password", password);
+			mv.addObject("tel", tel);
+			mv.addObject("birthday", birthday);
+			mv.addObject("postalCode", postalCode);
+			mv.addObject("address", address);
+
+			mv.setViewName("user_insert");
+
+		} else {
+			SimpleDateFormat nowFmt = new SimpleDateFormat("yyyyMMdd");
+			String nowDate = nowFmt.format(new Date());
+			int quitFlag = 1;
+			userRepository.save(new User(userName, email, password, tel, postalCode, address, birthday, nowDate, null, quitFlag));
+			mv.setViewName("user_login");
+		}
+
+		return mv;
+	}
+
+	// 管理者が存在するか確認してログイン
+	@RequestMapping(value = "/adminLogin",method = RequestMethod.GET)
+	public ModelAndView adminLogin(
+			@RequestParam("adminId")String adminId,
+			@RequestParam("adminPassword")String adminPassword,
+			ModelAndView mv
+			){
+		if(adminId == "" || adminId.length()==0) {
+			mv.addObject("adminIdErrMsg","管理者IDを入力してください");
+			mv.setViewName("admin_login");
+			return mv;
+		}
+		if(adminPassword == "" || adminPassword.length() == 0) {
+			mv.addObject("adminPasswordErrMsg","管理者パスワードを入力してください");
+			mv.setViewName("admin_login");
+			return mv;
+		}
+		session.setAttribute("adminId",adminId);
+		session.setAttribute("adminPass",adminPassword);
+
+		mv.addObject("adminId",adminId);
+		mv.addObject("adminPassword",adminPassword);
+
+		mv.setViewName("admin_top");
+		return mv;
+	}
+
+}
+
